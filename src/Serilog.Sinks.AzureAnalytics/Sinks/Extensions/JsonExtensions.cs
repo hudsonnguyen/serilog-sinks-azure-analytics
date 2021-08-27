@@ -1,11 +1,11 @@
 ﻿// Copyright 2019 Zethian Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,18 +25,37 @@ namespace Serilog.Sinks.Extensions
         {
             if (jsonObject == null)
                 return null;
+            var logPropToken = jsonObject.GetValue(LogPropertyName);
 
             if (flatObject) {
+                if (logPropToken is JObject logPropObject)
+                {
+                    var nestedProps = new List<string>();
+                    foreach (var keypair in logPropObject)
+                    {
+                        if (keypair.Value.Type == JTokenType.Object)
+                        {
+                            nestedProps.Add(keypair.Key);
+                        }
+                    }
+
+                    foreach (var key in nestedProps)
+                    {
+                        var token = logPropObject.GetValue(key);
+                        logPropObject.Remove(key);
+                        logPropObject.Add(key, token.ToString(Newtonsoft.Json.Formatting.None, null));
+                    }
+                }
+
                 return jsonObject;
             }
 
-            var logPropToken = jsonObject.GetValue(LogPropertyName);
             jsonObject.Remove(LogPropertyName);
 
             jsonObject.Add(LogPropertyName, logPropToken.ToString(Newtonsoft.Json.Formatting.None, null));
 
             return jsonObject;
-            
+
 
             // var dict = new Dictionary<string, object>();
             // FlattenJToken(dict, jsonObject, string.Empty);
