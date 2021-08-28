@@ -20,6 +20,7 @@ namespace Serilog.Sinks.Extensions
     internal static class JsonExtensions
     {
         private const string LogPropertyName = "LogProperties";
+        private const string ExceptionName = "LogException";
 
         internal static JObject Flatten(this JObject jsonObject, bool flatObject = true)
         {
@@ -28,24 +29,8 @@ namespace Serilog.Sinks.Extensions
             var logPropToken = jsonObject.GetValue(LogPropertyName);
 
             if (flatObject) {
-                if (logPropToken is JObject logPropObject)
-                {
-                    var nestedProps = new List<string>();
-                    foreach (var keypair in logPropObject)
-                    {
-                        if (keypair.Value.Type == JTokenType.Object)
-                        {
-                            nestedProps.Add(keypair.Key);
-                        }
-                    }
-
-                    foreach (var key in nestedProps)
-                    {
-                        var token = logPropObject.GetValue(key);
-                        logPropObject.Remove(key);
-                        logPropObject.Add(key, token.ToString(Newtonsoft.Json.Formatting.None, null));
-                    }
-                }
+                FlattenJObject(logPropToken as JObject);
+                FlattenJObject(jsonObject.GetValue(ExceptionName) as JObject);
 
                 return jsonObject;
             }
@@ -61,6 +46,28 @@ namespace Serilog.Sinks.Extensions
             // FlattenJToken(dict, jsonObject, string.Empty);
             //
             // return JObject.FromObject(dict);
+        }
+
+        private static JObject FlattenJObject(JObject logPropObject)
+        {
+            if (logPropObject is null) return logPropObject;
+            var nestedProps = new List<string>();
+            foreach (var keypair in logPropObject)
+            {
+                if (keypair.Value.Type == JTokenType.Object)
+                {
+                    nestedProps.Add(keypair.Key);
+                }
+            }
+
+            foreach (var key in nestedProps)
+            {
+                var token = logPropObject.GetValue(key);
+                logPropObject.Remove(key);
+                logPropObject.Add(key, token.ToString(Newtonsoft.Json.Formatting.None, null));
+            }
+
+            return logPropObject;
         }
 
         private static string Join(string prefix, string name)

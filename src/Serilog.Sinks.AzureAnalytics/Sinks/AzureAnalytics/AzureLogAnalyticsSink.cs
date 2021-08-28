@@ -164,17 +164,15 @@ namespace Serilog.Sinks
             var result = true;
             var counter = 0;
 
-            foreach (var logEvent in logEventsBatch) {
-                var eventObject = JObject.FromObject(
-                                              logEvent.Dictionary(
-                                                  _configurationSettings.StoreTimestampInUtc,
-                                                  _configurationSettings.FormatProvider),
-                                              _jsonSerializer)
-                                         .Flatten(_configurationSettings.Flatten);
+            foreach (var logEvent in logEventsBatch)
+            {
+                JObject eventObject = ParseLogEvent(logEvent);
 
                 var jsonString = JsonConvert.SerializeObject(eventObject, _jsonSerializerSettings);
-                if (GetStringSizeInBytes(jsonString.Length) >= MaximumMessageSize) {
-                    if (counter > 0) {
+                if (GetStringSizeInBytes(jsonString.Length) >= MaximumMessageSize)
+                {
+                    if (counter > 0)
+                    {
                         counter--;
                     }
 
@@ -184,10 +182,12 @@ namespace Serilog.Sinks
                     continue;
                 }
 
-                if (GetStringSizeInBytes(jsonStringCollectionSize + jsonString.Length) > MaximumMessageSize) {
+                if (GetStringSizeInBytes(jsonStringCollectionSize + jsonString.Length) > MaximumMessageSize)
+                {
                     SelfLog.WriteLine($"Sending mini batch of size {counter}");
                     result = await SendLogMessageAsync(jsonStringCollection).ConfigureAwait(false);
-                    if (!result) {
+                    if (!result)
+                    {
                         return false;
                     }
 
@@ -204,6 +204,16 @@ namespace Serilog.Sinks
             }
 
             return result && await SendLogMessageAsync(jsonStringCollection).ConfigureAwait(false);
+        }
+
+        internal JObject ParseLogEvent(LogEvent logEvent)
+        {
+            return JObject.FromObject(
+                logEvent.Dictionary(
+                    _configurationSettings.StoreTimestampInUtc,
+                    _configurationSettings.FormatProvider),
+                _jsonSerializer
+            ).Flatten(_configurationSettings.Flatten);
         }
 
         private async Task<bool> SendLogMessageAsync(List<string> jsonStringCollection)
