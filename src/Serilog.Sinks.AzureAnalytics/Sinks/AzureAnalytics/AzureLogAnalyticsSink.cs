@@ -193,10 +193,14 @@ namespace Serilog.Sinks
 
                     counter = 0;
                     jsonStringCollection.Clear();
+                    jsonStringCollectionSize = 0;
                 }
-
-                jsonStringCollection.Add(jsonString);
-                counter++;
+                else
+                {
+                    jsonStringCollection.Add(jsonString);
+                    jsonStringCollectionSize += jsonString.Length;
+                    counter++;
+                }
             }
 
             if (counter < logEventsBatch.Count) {
